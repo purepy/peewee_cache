@@ -13,7 +13,7 @@ assert peewee_cache
 
 class TestStringMethods(unittest.TestCase):
     def test_simple_select(self):
-        db = CachePostgresqlExtDatabase("postgres")
+        db = CachePostgresqlExtDatabase("postgres", register_hstore=False)
 
         class _CacheModel(RedisCacheModel):
             class Meta(object):
