@@ -7,7 +7,7 @@ from redis import StrictRedis
 from peewee_cache.base import RedisCacheModel, CachePostgresqlExtDatabase, CacheModel
 from peewee_cache.utils.log import logger
 
-__author__ = 'chenfengyuan'
+__author__ = "chenfengyuan"
 assert peewee_cache
 
 
@@ -23,23 +23,23 @@ class TestStringMethods(unittest.TestCase):
             username = peewee.CharField(unique=True, index=True)
 
         RedisCacheModel.initialize(StrictRedis())
-        db.drop_tables([User], True)
+        db.drop_tables([User])
         db.create_tables([User])
         with db.transaction():
-            obj = User.create(username='a')
+            obj = User.create(username="a")
         obj.flush_cache()
         obj = User.get_by_pk(1)
         logger.debug(obj._is_from_cache)
-        self.assertEqual(obj.username, 'a')
+        self.assertEqual(obj.username, "a")
         with db.transaction():
             obj = User.get_by_pk(1)
-            self.assertEqual(obj.username, 'a')
-            obj.username = 'b'
+            self.assertEqual(obj.username, "a")
+            obj.username = "b"
             obj.save()
         obj = User.get_by_pk(1)
-        self.assertEqual(obj.username, 'b')
-        obj.username = 'z'
-        id_ = User.select(User.id).where(User.username == 'b').scalar()
+        self.assertEqual(obj.username, "b")
+        obj.username = "z"
+        id_ = User.select(User.id).where(User.username == "b").scalar()
         self.assertEqual(id_, 1)
         with db.transaction():
             obj.delete_instance()
@@ -47,5 +47,5 @@ class TestStringMethods(unittest.TestCase):
             User.get_by_pk(1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

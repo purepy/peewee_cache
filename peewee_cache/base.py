@@ -1,9 +1,8 @@
 # coding=utf-8
-from peewee import Model, ModelOptions, Database, DoesNotExist
+from peewee import Model, Database, DoesNotExist
 from playhouse.postgres_ext import PostgresqlExtDatabase
 from .utils.log import logger
-from redis import StrictRedis
-import cPickle
+import pickle
 
 ObjectDoesNotExist = object()
 
@@ -24,7 +23,6 @@ class DumyCacheClient(object):
 
 
 class CacheModel(Model):
-
     @classmethod
     def create_or_get(cls, **kwargs):
         raise RuntimeError("CacheModel don't support create_or_get")
@@ -35,15 +33,15 @@ class CacheModel(Model):
 
     @classmethod
     def create(cls, **query):
-        logger.debug('creating')
+        logger.debug("creating")
         if cls.get_meta().database.transaction_depth() == 0:
             raise RuntimeError("create is only allowed in transaction")
         inst = super(CacheModel, cls).create(**query)
         return inst
 
     def cache_set(self):
-        logger.debug('setting %s', self)
-        self._cache_set(self.get_cache_key(), cPickle.dumps(self.to_dict()))
+        logger.debug("setting %s", self)
+        self._cache_set(self.get_cache_key(), pickle.dumps(self.to_dict()))
 
     @staticmethod
     def _cache_set(key, value):
@@ -60,11 +58,13 @@ class CacheModel(Model):
     def get_cache_key(self):
         primary_key_name = self.get_meta().primary_key.name
         primary_key = getattr(self, primary_key_name)
-        return u'{}.{}|{}'.format(self.__class__.__module__, self.__class__.__name__, primary_key)
+        return u"{}.{}|{}".format(
+            self.__class__.__module__, self.__class__.__name__, primary_key
+        )
 
     @classmethod
     def get_cache_key_by_primary_key(cls, id_):
-        return u'{}.{}|{}'.format(cls.__module__, cls.__name__, id_)
+        return u"{}.{}|{}".format(cls.__module__, cls.__name__, id_)
 
     @classmethod
     def get_meta(cls):
@@ -74,7 +74,7 @@ class CacheModel(Model):
         return getattr(cls, "_meta")
 
     def to_dict(self):
-        return self._data
+        return self.__data__
 
     @classmethod
     def from_dict(cls, dict_):
@@ -82,14 +82,17 @@ class CacheModel(Model):
 
     def __str__(self):
         try:
-            tmp = [u"{}.{}".format(self.__class__.__module__, self.__class__.__name__), u"("]
+            tmp = [
+                u"{}.{}".format(self.__class__.__module__, self.__class__.__name__),
+                u"(",
+            ]
             meta = getattr(self, "_meta")
             for i, k in enumerate(meta.sorted_field_names):
                 v = getattr(self, k)
                 if i == 0:
-                    tmp.append(u'{}={}'.format(k, v))
+                    tmp.append(u"{}={}".format(k, v))
                 else:
-                    tmp.append(u', {}={}'.format(k, v))
+                    tmp.append(u", {}={}".format(k, v))
             tmp.append(u")")
             return u"".join(tmp)
         except:
@@ -106,10 +109,10 @@ class CacheModel(Model):
 
     @classmethod
     def get_from_cache_by_pk(cls, id_):
-        logger.debug('getting %s %s', cls, id_)
+        logger.debug("getting %s %s", cls, id_)
         v = cls._cache_get(cls.get_cache_key_by_primary_key(id_))
         if v is not None:
-            rv = cls.from_dict(cPickle.loads(v))
+            rv = cls.from_dict(pickle.loads(v))
             rv._is_from_cache = True
             return rv
         rv = cls.get_from_db_by_pk(id_)
